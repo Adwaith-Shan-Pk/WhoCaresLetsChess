@@ -40,8 +40,18 @@ def detect_skewer(board: chess.Board) -> bool:
     color = not board.turn
     for square in chess.SQUARES:
         piece = board.piece_at(square)
+        # Only long-range pieces (Queen, Rook, Bishop) can perform a skewer
         if piece and piece.color == color and piece.piece_type in (chess.ROOK, chess.BISHOP, chess.QUEEN):
-            if len(board.attacks(square)) >= 3:
+            attacks = list(board.attacks(square))
+            
+            # A skewer requires at least two pieces on the same line of attack
+            # We filter for enemy pieces specifically
+            targets = [board.piece_at(t) for t in attacks if board.piece_at(t) and board.piece_at(t).color != color]
+            
+            # If we are attacking 2+ pieces on one line, it's likely a tactical motif
+            if len(targets) >= 2:
+                # Optional: Ensure the first target is more valuable than the second
+                # (This is the definition of a skewer vs a pin)
                 return True
     return False
 
