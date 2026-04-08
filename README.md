@@ -1,21 +1,19 @@
-# ♟️ Local AI Chess Puzzle Generator
+# ♟️ WhoCaresLetsChess
 
-A fully local, AI-powered chess puzzle trainer built with Python.
-Detects tactical motifs such as **pins, forks, skewers, and back-rank mates**, and uses a local LLM via **Ollama** to generate context-aware hints and explanations — all offline, no internet needed.
+A fully local, AI-powered chess puzzle trainer built with Python and Tkinter.  
+Solve 5 hand-curated tactical puzzles, get AI hints, and see full move explanations — all offline, no internet required after setup.
 
 ---
 
 ## Features
 
-- **Interactive chessboard** — click a piece, click the destination to move
-- **Board coordinates** — rank numbers (1–8) and file letters (a–h) displayed for easy navigation
-- **Tactical puzzles** — Pin, Fork, Skewer, Back-rank mate
-- **Puzzle controls:**
-  - **New Puzzle** — load a random puzzle
-  - **Retry Puzzle** — reset the current puzzle
-  - **Get Hint** — AI-generated hint that identifies the key piece without spoiling the move
-  - **Show Solution** — reveals the move with a full AI explanation
-- **Anti-hallucination hints** — the AI is given a plain-English board description so it always mentions the correct piece
+- **Interactive chessboard** — click a piece, then click its destination to move
+- **5 curated tactical puzzles** — covering pins, forks, checkmates, and Scholar's Mate
+- **Sequential puzzle navigation** — work through puzzles in order with ◀ Prev / Next ▶ buttons
+- **Progress tracker** — "Puzzle X of 5" counter with clickable pip dots
+- **AI-powered hints** — Mistral identifies the key piece without revealing the destination
+- **AI solution explanations** — full plain-English breakdown of why the move works
+- **Anti-hallucination prompts** — board state is pre-parsed with `python-chess` and fed to the AI as plain English, not raw FEN
 - **Fully offline** after initial setup
 
 ---
@@ -25,13 +23,13 @@ Detects tactical motifs such as **pins, forks, skewers, and back-rank mates**, a
 ```
 WhoCaresLetsChess/
 ├── main.py          # Entry point
-├── ui.py            # Tkinter GUI (Canvas-based chessboard)
-├── chess_logic.py   # Tactical motif detection & puzzle generation
-├── ai_helper.py     # Ollama prompt builder & query functions
-├── storage.py       # puzzles.json read/write
+├── ui.py            # Tkinter GUI — Canvas chessboard, navigation, AI panel
+├── chess_logic.py   # Tactical motif detection & puzzle generation helpers
+├── ai_helper.py     # Ollama prompt builder, hint & explanation functions
+├── storage.py       # puzzles.json read/write & initialisation
+├── puzzles.json     # 5 curated tactical puzzles
 ├── requirements.txt # Python dependencies
-├── .gitignore
-└── puzzles.json     # Auto-generated on first run
+└── .gitignore
 ```
 
 ---
@@ -42,11 +40,11 @@ WhoCaresLetsChess/
 Download from https://www.python.org/downloads/
 
 ### 2. Ollama
-Download from https://ollama.com/download — install and leave it running (it sits in the system tray).
+Download from https://ollama.com/download — install and leave it running in the system tray.
 
-### 3. Pull the model (once)
+### 3. Pull the Mistral model (once, ~4 GB)
 ```bash
-ollama pull llama3.2:3b
+ollama pull mistral
 ```
 
 ---
@@ -55,7 +53,7 @@ ollama pull llama3.2:3b
 
 ```bash
 # Clone the repo
-git clone <your-repo-url>
+git clone https://github.com/Antobruh/WhoCaresLetsChess.git
 cd WhoCaresLetsChess
 
 # Install Python dependencies
@@ -70,7 +68,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-That's it. The app will auto-generate puzzles on the first run.
+The app loads immediately with all 5 puzzles ready to go.
 
 ---
 
@@ -78,16 +76,40 @@ That's it. The app will auto-generate puzzles on the first run.
 
 | Action | How |
 |--------|-----|
-| Move a piece | Click piece → Click destination square |
-| New puzzle | Click **New Puzzle** |
-| Retry same puzzle | Click **Retry Puzzle** |
-| Get a hint | Click **Get Hint** |
-| See the solution | Click **Show Solution** |
+| Move a piece | Click piece → click destination square |
+| Next puzzle | Click **Next ▶** |
+| Previous puzzle | Click **◀ Prev** |
+| Retry same puzzle | Click **↺ Retry** |
+| Get an AI hint | Click **💡 Get Hint** |
+| Reveal the solution | Click **✅ Show Solution** |
+| Jump to any puzzle | Click the pip dot for that puzzle |
+
+---
+
+## The 5 Puzzles
+
+| # | Title | Theme |
+|---|-------|-------|
+| 1 | The Classic Pin | Pin |
+| 2 | Knight Fork Fiesta | Fork |
+| 3 | Scholar's Trap | Checkmate (Queen) |
+| 4 | Discovered Check | Fork + Check |
+| 5 | Back-Rank Blaster | Back-rank checkmate |
 
 ---
 
 ## How It Works
 
-1. **Puzzle generation** — `chess_logic.py` scans legal moves from a set of known tactical FEN positions and detects motifs (fork, pin, skewer, back-rank mate) using the `python-chess` library.
-2. **Hints** — `ai_helper.py` parses the solution move with `python-chess` to extract the exact piece and square, then constructs a tightly constrained prompt so the AI names the right piece every time.
-3. **Storage** — Puzzles are saved to `puzzles.json` and loaded on startup so generation only runs once.
+1. **Puzzles** — `puzzles.json` ships 5 hand-verified positions. Solutions are stored in exact SAN notation (including `x` for captures and `#` for checkmates) so move comparisons are exact.
+2. **Hints** — `ai_helper.py` parses the solution with `python-chess` to extract the moving piece and its square, then prompts Mistral to give a one-sentence hint — never revealing the destination.
+3. **Explanations** — the board is described in plain English (not raw FEN) before being sent to Mistral, eliminating piece-hallucination errors.
+4. **UI** — `ui.py` uses a `tk.Canvas` for pixel-perfect rendering of squares, coordinates, and Unicode chess pieces. AI calls run in background threads to keep the UI responsive.
+
+---
+
+## Requirements
+
+```
+python-chess
+requests
+```
