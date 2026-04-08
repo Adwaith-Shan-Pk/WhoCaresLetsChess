@@ -111,13 +111,6 @@ class ChessUI(tk.Tk):
         self.pip_frame.pack(fill="x", pady=(2, 4))
         self.pip_labels = []   # will be rebuilt when puzzle count is known
 
-        # Row 4: puzzle description
-        self.desc_var = tk.StringVar(value="")
-        tk.Label(hdr, textvariable=self.desc_var,
-                 font=("Arial", 10), bg="#16213e", fg="#cbd5e1",
-                 anchor="w", wraplength=380, justify="left"
-                 ).pack(fill="x")
-
         # Feedback label
         self.feedback_var = tk.StringVar(value="")
         self.feedback_label = tk.Label(
@@ -373,8 +366,6 @@ class ChessUI(tk.Tk):
         self.puzzle_title_var.set(p.get("title", f"Puzzle {num}"))
         self.progress_var.set(f"Puzzle {num} of {total}")
         self.motif_var.set(f"Theme: {self.motif.replace('_', ' ').title()}")
-        self.desc_var.set(p.get("description", "Find the best move!"))
-
         self.feedback_var.set("Click a piece, then click its destination square")
         self.feedback_label.config(fg="#94a3b8")
 
