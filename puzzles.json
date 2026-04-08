@@ -1,22 +1,42 @@
 [
   {
-    "fen": "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
+    "id": 1,
+    "title": "The Classic Pin",
+    "fen": "r1bqk2r/pppp1ppp/2n2n2/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5",
     "solution": "Bxc6",
-    "motif": "pin"
+    "motif": "pin",
+    "description": "White's bishop on b5 pins the knight to the king — capture it to win material!"
   },
   {
-    "fen": "rnbqkbnr/ppp2ppp/8/3p4/3P4/8/PPP2PPP/RNBQKBNR w KQkq - 0 1",
-    "solution": "Qe2+",
-    "motif": "pin"
+    "id": 2,
+    "title": "Knight Fork Fiesta",
+    "fen": "r1bqkb1r/ppp2ppp/3p1n2/4N3/4P3/8/PPP2PPP/RNBQKB1R w KQkq - 0 8",
+    "solution": "Nd7",
+    "motif": "fork",
+    "description": "A single knight leap attacks the queen and rook at the same time — grab material!"
   },
   {
-    "fen": "r1bqkbnr/ppp2ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
-    "solution": "c4",
-    "motif": "pin"
+    "id": 3,
+    "title": "Scholar's Trap",
+    "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    "solution": "Qxf7#",
+    "motif": "checkmate",
+    "description": "Black played Nf6?? walking into the famous Scholar's Mate — deliver the killer queen move!"
   },
   {
-    "fen": "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
-    "solution": "Rxe8#",
-    "motif": "pin"
+    "id": 4,
+    "title": "Discovered Check",
+    "fen": "r1b1kb1r/ppqn1ppp/2p1p3/3pN3/3P4/2N5/PPP1BPPP/R1BQK2R w KQkq - 0 9",
+    "solution": "Nxf7",
+    "motif": "fork",
+    "description": "The knight leaps to f7 — forking queen and rook while delivering a devastating check!"
+  },
+  {
+    "id": 5,
+    "title": "Back-Rank Blaster",
+    "fen": "r5k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
+    "solution": "Rxa8#",
+    "motif": "back_rank_mate",
+    "description": "The rook slides all the way to a8 — the king has nowhere to run. Checkmate!"
   }
 ]

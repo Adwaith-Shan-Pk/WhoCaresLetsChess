@@ -46,7 +46,7 @@ def describe_board(fen: str) -> str:
 def query_ollama(prompt: str) -> str:
     """Send a prompt to Ollama and return the response text."""
     payload = {
-        "model": "llama3.2:3b",
+        "model": "mistral",
         "prompt": prompt,
         "stream": False,
         "options": {
@@ -59,11 +59,24 @@ def query_ollama(prompt: str) -> str:
         if response.status_code == 200:
             return response.json().get("response", "No response received.")
         else:
-            return f"Ollama returned error {response.status_code}"
+            return (
+                f"⚠️  Ollama returned HTTP {response.status_code}.\n\n"
+                "Try restarting Ollama and make sure the model "
+                "'llama3.2:3b' is downloaded:\n"
+                "  ollama pull llama3.2:3b"
+            )
     except requests.exceptions.ConnectionError:
-        return "❌ Cannot connect to Ollama.\n\nMake sure Ollama is running (check the tray icon)."
+        return (
+            "❌  Ollama is not running.\n\n"
+            "Start it with:  ollama serve\n"
+            "Then pull the model if needed:  ollama pull llama3.2:3b\n\n"
+            "The puzzle hint / solution text above still shows — "
+            "AI explanation requires Ollama to be active."
+        )
+    except requests.exceptions.Timeout:
+        return "⏳  Ollama timed out (>60 s). The model may be cold-starting — try again in a moment."
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Unexpected error: {str(e)}"
 
 
 def give_hint(fen: str, motif: str, solution: str) -> str:
