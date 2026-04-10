@@ -2,6 +2,191 @@
 import chess
 import random
 
+# ---------------------------------------------------------------------------#
+# Piece values (centipawns)
+# ---------------------------------------------------------------------------#
+PIECE_VALUES = {
+    chess.PAWN:   100,
+    chess.KNIGHT: 320,
+    chess.BISHOP: 330,
+    chess.ROOK:   500,
+    chess.QUEEN:  900,
+    chess.KING:   20000,
+}
+
+# ---------------------------------------------------------------------------#
+# Piece-Square Tables (PST) — from White's perspective, a1=index 0, h8=index 63
+# Source: Chess Programming Wiki (public domain)
+# ---------------------------------------------------------------------------#
+PAWN_TABLE = [
+     0,  0,  0,  0,  0,  0,  0,  0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+     5,  5, 10, 25, 25, 10,  5,  5,
+     0,  0,  0, 20, 20,  0,  0,  0,
+     5, -5,-10,  0,  0,-10, -5,  5,
+     5, 10, 10,-20,-20, 10, 10,  5,
+     0,  0,  0,  0,  0,  0,  0,  0,
+]
+
+KNIGHT_TABLE = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50,
+]
+
+BISHOP_TABLE = [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20,
+]
+
+ROOK_TABLE = [
+     0,  0,  0,  0,  0,  0,  0,  0,
+     5, 10, 10, 10, 10, 10, 10,  5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+     0,  0,  0,  5,  5,  0,  0,  0,
+]
+
+QUEEN_TABLE = [
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+     -5,  0,  5,  5,  5,  5,  0, -5,
+      0,  0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20,
+]
+
+KING_TABLE = [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20,
+]
+
+_PST = {
+    chess.PAWN:   PAWN_TABLE,
+    chess.KNIGHT: KNIGHT_TABLE,
+    chess.BISHOP: BISHOP_TABLE,
+    chess.ROOK:   ROOK_TABLE,
+    chess.QUEEN:  QUEEN_TABLE,
+    chess.KING:   KING_TABLE,
+}
+
+# ---------------------------------------------------------------------------#
+# Evaluation
+# ---------------------------------------------------------------------------#
+def evaluate(board: chess.Board) -> int:
+    """Static evaluation in centipawns (positive = good for White)."""
+    if board.is_checkmate():
+        # The side to move is checkmated — that's bad for them
+        return -99999 if board.turn == chess.BLACK else 99999
+    if board.is_stalemate() or board.is_insufficient_material():
+        return 0
+
+    score = 0
+    for square in chess.SQUARES:
+        piece = board.piece_at(square)
+        if piece is None:
+            continue
+        value = PIECE_VALUES.get(piece.piece_type, 0)
+        pst   = _PST.get(piece.piece_type, [0] * 64)
+        # White: read PST from a1 upward (square index matches a1=0)
+        # Black: mirror vertically (63 - square)
+        if piece.color == chess.WHITE:
+            positional = pst[square]
+            score += value + positional
+        else:
+            positional = pst[63 - square]
+            score -= value + positional
+    return score
+
+# ---------------------------------------------------------------------------#
+# Minimax with Alpha-Beta pruning
+# ---------------------------------------------------------------------------#
+def minimax(board: chess.Board, depth: int, alpha: float, beta: float, maximizing: bool) -> float:
+    """
+    Minimax with alpha-beta pruning.
+    White = maximizing player, Black = minimizing player.
+    """
+    if depth == 0 or board.is_game_over():
+        return evaluate(board)
+
+    if maximizing:
+        best = float('-inf')
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, alpha, beta, False)
+            board.pop()
+            best = max(best, score)
+            alpha = max(alpha, best)
+            if beta <= alpha:
+                break   # β cut-off
+        return best
+    else:
+        best = float('inf')
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, alpha, beta, True)
+            board.pop()
+            best = min(best, score)
+            beta = min(beta, best)
+            if beta <= alpha:
+                break   # α cut-off
+        return best
+
+# ---------------------------------------------------------------------------#
+# Public API: get the best move for the current position
+# ---------------------------------------------------------------------------#
+def get_best_move(board: chess.Board, depth: int = 4) -> chess.Move:
+    """
+    Return the best legal move according to Minimax at the given depth.
+    White maximises, Black minimises — always from White's perspective.
+    """
+    best_move  = None
+    best_score = float('-inf') if board.turn == chess.WHITE else float('inf')
+
+    for move in board.legal_moves:
+        board.push(move)
+        score = minimax(board, depth - 1, float('-inf'), float('inf'),
+                        board.turn == chess.WHITE)
+        board.pop()
+
+        if board.turn == chess.WHITE:
+            if score > best_score:
+                best_score = score
+                best_move  = move
+        else:
+            if score < best_score:
+                best_score = score
+                best_move  = move
+
+    # Fallback: return any legal move (should never be needed)
+    if best_move is None and any(True for _ in board.legal_moves):
+        best_move = next(iter(board.legal_moves))
+
+    return best_move
+
 # Classic book-style tactical positions (real puzzles from chess literature)
 EXAMPLE_FENS = [
     # 1. Famous Ruy Lopez pin (Bb5)

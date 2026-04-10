@@ -81,23 +81,24 @@ def query_ollama(prompt: str) -> str:
 
 def give_hint(fen: str, motif: str, solution: str) -> str:
     """
-    Give a hint by pre-parsing the solution move so the AI knows EXACTLY
-    which piece is involved — eliminating wrong-piece hallucinations.
+    Give a hint using Minimax to find the best move, then pass that verified
+    move to Mistral for a natural-language hint — no hallucinations possible.
+    Falls back to a plain text hint if Ollama is unavailable.
     """
+    from chess_logic import get_best_move
+
     board = chess.Board(fen)
     board_desc = describe_board(fen)
 
-    # Parse the solution to find the moving piece and its current square
-    try:
-        move = board.parse_san(solution)
-        piece = board.piece_at(move.from_square)
-        piece_name = PIECE_NAMES.get(piece.piece_type, "piece") if piece else "piece"
-        from_sq   = chess.square_name(move.from_square)
-        color_name = "White" if (piece and piece.color == chess.WHITE) else "Black"
-        piece_info = f"The {color_name} {piece_name} currently on {from_sq}"
-    except Exception:
-        piece_info = "A key piece on the board"
+    # Use Minimax to find the best move — no guessing
+    best_move  = get_best_move(board, depth=4)
+    piece      = board.piece_at(best_move.from_square)
+    piece_name = PIECE_NAMES.get(piece.piece_type, "piece") if piece else "piece"
+    from_sq    = chess.square_name(best_move.from_square)
+    color_name = "White" if (piece and piece.color == chess.WHITE) else "Black"
+    piece_info = f"The {color_name} {piece_name} currently on {from_sq}"
 
+    # Pass verified move info to Mistral for a natural language hint
     prompt = f"""You are a chess coach giving a ONE-sentence hint to a beginner.
 
 FACTS (do not contradict these):
@@ -112,7 +113,15 @@ Board for context:
 Write exactly ONE encouraging hint sentence that mentions the piece type and its square ({from_sq}), without revealing the destination.
 
 Hint:"""
-    return query_ollama(prompt)
+
+    try:
+        result = query_ollama(prompt)
+        # If query_ollama returned an error string (starts with ❌ or ⚠️), use fallback
+        if result.startswith("❌") or result.startswith("⚠️") or result.startswith("⏳"):
+            return f"💡 Consider the {piece_name} on {from_sq}!"
+        return result
+    except Exception:
+        return f"💡 Consider the {piece_name} on {from_sq}!"
 
 
 def explain_solution(fen: str, solution: str, motif: str) -> str:
